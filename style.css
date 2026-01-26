@@ -375,3 +375,6 @@ label {
 
 /* footer */
 .footer-space { height: 40px; }
+
+
+.auth-loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,18,32,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:9999;color:#eaf6ff;font-weight:700;letter-spacing:.4px}

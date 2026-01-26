@@ -14,7 +14,7 @@
   auth.onAuthStateChanged((user) => {
     if (!user) {
       // Não está logado: volta para o login
-      window.location.href = "index.html";
+      window.location.replace("index.html");
       return;
     }
     // Marca sessão apenas para UI (não é segurança)
@@ -23,5 +23,8 @@
       if (user.email) sessionStorage.setItem("usuario", user.email);
       sessionStorage.setItem("logado", "1");
     } catch (e) {}
+    // libera UI
+    const ov = document.getElementById("authLoading");
+    if (ov) ov.style.display = "none";
   });
 })();

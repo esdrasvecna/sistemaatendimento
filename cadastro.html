@@ -21,6 +21,7 @@
 </head>
 
 <body>
+  <div id="authLoading" class="auth-loading">Carregando…</div>
 
   <main class="container">
     <div class="page-title">
@@ -121,7 +122,7 @@
 
           <div class="actions">
             <button class="btn btn-ghost" type="button" id="btnNovoRelatorio">Novo relatório</button>
-            <button class="btn btn-ghost" type="button" id="btnExportar">Gerar documento final</button>
+            <button class="btn btn-ghost" type="button" id="btnExportar">Gerar PDF (documento final)</button>
             <button class="btn btn-danger" type="button" id="btnExcluirRelatorio" style="display:none;">Excluir relatório</button>
           </div>
 
@@ -149,6 +150,8 @@
     </div>
   </main>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="cadastro.js"></script>
 </body>
 </html>

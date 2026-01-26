@@ -240,7 +240,10 @@ async function salvarPessoa(e) {
       if (laudo) await docRef.set(laudo, { merge: true });
 
       $("pessoaId").value = docRef.id;
-      alert("Pessoa cadastrada.");
+      // Carrega a pessoa recém-criada no formulário e já inicia os relatórios
+      const pessoaNova = { id: docRef.id, ...payloadBase, ...(laudo || {}) };
+      fillPessoaForm(pessoaNova);
+      alert("Pessoa cadastrada. Agora você já pode salvar relatórios abaixo.");
     } else {
       // update
       const ref = db.collection("pessoas").doc(id);
@@ -537,91 +540,178 @@ async function exportarDocumentoFinal() {
 
     const rels = relSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-    let html = `
-      <div style="font-family: Arial, sans-serif;">
-        <h1 style="color:#0284c7; margin:0 0 10px;">Documento Final (Histórico da Pessoa)</h1>
-        <p style="margin:0 0 14px; color:#333;">Gerado em: ${new Date().toLocaleString("pt-BR")}</p>
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert("Biblioteca de PDF não carregou. Verifique sua conexão.");
+      return;
+    }
 
-        <h2 style="margin: 10px 0 6px;">Dados da pessoa</h2>
-        <table border="1" cellspacing="0" cellpadding="6" style="border-collapse: collapse; width: 100%;">
-          <tr><td><b>Nome</b></td><td>${escapeHtml(p.nome)}</td></tr>
-          <tr><td><b>Data de nascimento</b></td><td>${escapeHtml(fmtDate(p.dataNascimento))}</td></tr>
-          <tr><td><b>Cartão SUS</b></td><td>${escapeHtml(p.cartaoSus || "-")}</td></tr>
-          <tr><td><b>Telefone</b></td><td>${escapeHtml(p.telefone || "-")}</td></tr>
-          <tr><td><b>Endereço</b></td><td>${escapeHtml(p.endereco || "-")}</td></tr>
-          <tr><td><b>Observação</b></td><td>${escapeHtml(p.observacao || "-")}</td></tr>
-          <tr><td><b>Laudo</b></td><td>${p.laudoUrl ? `<a href="${p.laudoUrl}">${escapeHtml(p.laudoNome || "Abrir")}</a>` : "-"}</td></tr>
-        </table>
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 40;
+    let y = 50;
 
-        <h2 style="margin: 14px 0 6px;">Relatórios (${rels.length})</h2>
-    `;
+    const title = "Documento Final — Cadastro de Pessoas";
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text(title, margin, y);
+    y += 18;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, margin, y);
+    y += 18;
+
+    // ===== Dados da pessoa
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Dados da pessoa", margin, y);
+    y += 12;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    const linhasPessoa = [
+      ["Nome", p.nome || "-"],
+      ["Data de nascimento", fmtDate(p.dataNascimento) || "-"],
+      ["Cartão SUS", p.cartaoSus || "-"],
+      ["Telefone", p.telefone || "-"],
+      ["Endereço", p.endereco || "-"],
+      ["Observação", p.observacao || "-"],
+    ];
+
+    if (doc.autoTable) {
+      doc.autoTable({
+        startY: y,
+        head: [["Campo", "Valor"]],
+        body: linhasPessoa,
+        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fontSize: 9 },
+        margin: { left: margin, right: margin },
+      });
+      y = doc.lastAutoTable.finalY + 14;
+    } else {
+      // fallback simples
+      for (const [k, v] of linhasPessoa) {
+        doc.text(`${k}: ${String(v)}`, margin, y);
+        y += 12;
+      }
+      y += 10;
+    }
+
+    // ===== Anexo (laudo)
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Anexo (laudo)", margin, y);
+    y += 12;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    if (p.laudoUrl) {
+      const nome = p.laudoNome || "abrir anexo";
+      // Link clicável (quando o leitor de PDF suporta)
+      if (doc.textWithLink) {
+        doc.textWithLink(`Arquivo: ${nome}`, margin, y, { url: p.laudoUrl });
+      } else {
+        doc.text(`Arquivo: ${nome} — ${p.laudoUrl}`, margin, y);
+      }
+      y += 14;
+
+      // Se for imagem, tenta incorporar no PDF
+      const ext = (nome.split(".").pop() || "").toLowerCase();
+      const isImg = ["png", "jpg", "jpeg", "webp"].includes(ext);
+
+      if (isImg) {
+        try {
+          const resp = await fetch(p.laudoUrl);
+          const blob = await resp.blob();
+          const dataUrl = await new Promise((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(fr.result);
+            fr.onerror = reject;
+            fr.readAsDataURL(blob);
+          });
+
+          // calcula tamanho para caber na página
+          const maxW = pageW - margin * 2;
+          const imgW = maxW;
+          const imgH = imgW * 0.6;
+
+          if (y + imgH > doc.internal.pageSize.getHeight() - margin) {
+            doc.addPage();
+            y = margin;
+          }
+
+          doc.addImage(dataUrl, ext === "png" ? "PNG" : "JPEG", margin, y, imgW, imgH);
+          y += imgH + 14;
+        } catch (e) {
+          console.warn("Não foi possível embutir a imagem do anexo no PDF:", e);
+          doc.text("Obs.: não foi possível embutir a imagem no PDF, mas o link acima está disponível.", margin, y);
+          y += 12;
+        }
+      } else {
+        doc.text("Obs.: anexos PDF/DOC não são embutidos. O link acima abre o arquivo.", margin, y);
+        y += 12;
+      }
+    } else {
+      doc.text("Nenhum anexo enviado.", margin, y);
+      y += 12;
+    }
+
+    // ===== Relatórios
+    if (y > doc.internal.pageSize.getHeight() - 120) {
+      doc.addPage();
+      y = margin;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Relatórios (histórico)", margin, y);
+    y += 12;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
 
     if (!rels.length) {
-      html += `<p>Nenhum relatório cadastrado.</p>`;
-    }
+      doc.text("Nenhum relatório cadastrado.", margin, y);
+      y += 12;
+    } else {
+      const rows = rels.map((r) => ([
+        fmtDate(r.dataRelatorio) || "-",
+        fmtDate(r.ultimaData) || "-",
+        r.concluida ? "Sim" : "Não",
+        r.enviadoPara || "-",
+        (r.urgencia || "sem").toUpperCase(),
+        (r.observacoes || "").slice(0, 120)
+      ]));
 
-    for (const r of rels) {
-      html += `
-        <div style="margin: 12px 0; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-          <h3 style="margin:0 0 6px;">Relatório: ${escapeHtml(fmtDate(r.dataRelatorio) || "-")}</h3>
-          <p style="margin:0 0 6px;"><b>Última data:</b> ${escapeHtml(fmtDate(r.ultimaData) || "-")}</p>
-          <p style="margin:0 0 6px;"><b>Concluída:</b> ${r.concluida ? "Sim" : "Não"}</p>
-          <p style="margin:0 0 6px;"><b>Enviado para:</b> ${escapeHtml(r.enviadoPara || "-")}</p>
-          <p style="margin:0 0 6px;"><b>Urgência:</b> ${escapeHtml(prettyUrg(r.urgencia))}</p>
-          <p style="margin:0 0 6px;"><b>Observações:</b> ${escapeHtml(r.observacoes || "")}</p>
-
-          <h4 style="margin: 10px 0 6px;">Histórico de alterações</h4>
-      `;
-
-      const hist = Array.isArray(r.historico) ? r.historico : [];
-      if (!hist.length) {
-        html += `<p style="margin:0;">Sem histórico.</p>`;
+      if (doc.autoTable) {
+        doc.autoTable({
+          startY: y,
+          head: [["Data", "Última data", "Concluída", "Enviado para", "Urgência", "Observações"]],
+          body: rows,
+          styles: { fontSize: 8, cellPadding: 3 },
+          headStyles: { fontSize: 8 },
+          margin: { left: margin, right: margin },
+        });
+        y = doc.lastAutoTable.finalY + 10;
       } else {
-        html += `<table border="1" cellspacing="0" cellpadding="6" style="border-collapse: collapse; width: 100%;">
-          <tr>
-            <th>Quando</th><th>Quem</th><th>Tipo</th><th>Alterações</th>
-          </tr>`;
-
-        for (const h of hist) {
-          const when = h.at ? new Date(h.at).toLocaleString("pt-BR") : "-";
-          const who = h.by || "-";
-          const tipo = h.tipo || "-";
-          const changes = h.changes && typeof h.changes === "object" ? h.changes : {};
-          const lines = Object.keys(changes).length
-            ? Object.entries(changes)
-                .map(([k, v]) => {
-                  const de = v?.de === null || v?.de === undefined ? "-" : String(v.de);
-                  const para = v?.para === null || v?.para === undefined ? "-" : String(v.para);
-                  return `<div><b>${escapeHtml(k)}</b>: "${escapeHtml(de)}" → "${escapeHtml(para)}"</div>`;
-                })
-                .join("")
-            : "(sem mudanças)";
-
-          html += `
-            <tr>
-              <td>${escapeHtml(when)}</td>
-              <td>${escapeHtml(who)}</td>
-              <td>${escapeHtml(tipo)}</td>
-              <td>${lines}</td>
-            </tr>
-          `;
+        for (const row of rows) {
+          doc.text(row.join(" | "), margin, y);
+          y += 12;
         }
-
-        html += `</table>`;
       }
-
-      html += `</div></div>`;
     }
 
-    html += `</div>`;
-
-    const fileBase = `pessoa_${(p.nome || "pessoa").replace(/\s+/g, "_").slice(0, 40)}_${Date.now()}`;
-    downloadWordDoc(fileBase, html);
+    const safeName = (p.nome || "pessoa").replace(/[^\w\-]+/g, "_").slice(0, 40);
+    doc.save(`documento_final_${safeName}.pdf`);
   } catch (err) {
     console.error(err);
-    alert("Erro ao gerar documento.");
+    alert("Erro ao gerar PDF. Verifique conexão e permissões.");
   }
 }
+
 
 // ===== Eventos =====
 document.addEventListener("DOMContentLoaded", () => {
