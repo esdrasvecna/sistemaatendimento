@@ -21,7 +21,9 @@ const storage = firebase.storage();
 
 // ===== Helpers =====
 const $ = (id) => document.getElementById(id);
-const usuario = sessionStorage.getItem("usuario") || "(desconhecido)";
+let usuario = sessionStorage.getItem("usuario") || "(desconhecido)";
+// Tenta pegar email do Firebase Auth quando disponível
+try { const u = firebase.auth().currentUser; if (u && u.email) usuario = u.email; } catch(_) {}
 
 function normalize(v) {
   return String(v || "")
@@ -176,7 +178,7 @@ function listenPessoas() {
       },
       (err) => {
         console.error(err);
-        alert("Erro ao carregar pessoas. Verifique regras do Firestore e conexão.");
+        alert(`Erro ao carregar pessoas: ${err?.code || ""} ${err?.message || err}`);
       }
     );
 }
@@ -259,7 +261,7 @@ async function salvarPessoa(e) {
     }
   } catch (err) {
     console.error(err);
-    alert("Erro ao salvar cadastro. Verifique Firestore/Storage e permissões.");
+    alert(`Erro ao salvar cadastro: ${err?.code || ""} ${err?.message || err}`);
   }
 }
 
@@ -715,18 +717,40 @@ async function exportarDocumentoFinal() {
 
 // ===== Eventos =====
 document.addEventListener("DOMContentLoaded", () => {
-  listenPessoas();
+  // Espera o Firebase Auth confirmar o usuário antes de acessar o Firestore.
+  const auth = firebase.auth();
+  const overlay = document.getElementById("authLoading");
 
-  $("pessoaForm").addEventListener("submit", salvarPessoa);
-  $("btnNovo").onclick = resetPessoaForm;
-  $("btnExcluir").onclick = excluirPessoa;
-  $("pesquisa").addEventListener("input", renderPessoas);
+  function enableUI() {
+    if (overlay) overlay.style.display = "none";
+    listenPessoas();
 
-  $("relatorioForm").addEventListener("submit", salvarRelatorio);
-  $("btnNovoRelatorio").onclick = resetRelatorioForm;
-  $("btnExcluirRelatorio").onclick = excluirRelatorio;
-  $("btnExportar").onclick = exportarDocumentoFinal;
+    $("pessoaForm").addEventListener("submit", salvarPessoa);
+    $("btnNovo").onclick = resetPessoaForm;
+    $("btnExcluir").onclick = excluirPessoa;
+    $("pesquisa").addEventListener("input", renderPessoas);
 
-  // valores padrão
-  $("dataRelatorio").value = todayISO();
+    $("relatorioForm").addEventListener("submit", salvarRelatorio);
+    $("btnNovoRelatorio").onclick = resetRelatorioForm;
+    $("btnExcluirRelatorio").onclick = excluirRelatorio;
+    $("btnExportar").onclick = exportarDocumentoFinal;
+
+    $("dataRelatorio").value = todayISO();
+  }
+
+  auth.onAuthStateChanged((user) => {
+    if (!user) {
+      // auth-guard.js já redireciona, mas deixamos um fallback
+      window.location.replace("index.html");
+      return;
+    }
+    // Atualiza “usuario” para registro/auditoria
+    try {
+      sessionStorage.setItem("uid", user.uid);
+      if (user.email) { sessionStorage.setItem("usuario", user.email); usuario = user.email; }
+      sessionStorage.setItem("logado", "1");
+    } catch (_) {}
+
+    enableUI();
+  });
 });
