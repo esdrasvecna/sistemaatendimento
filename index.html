@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Atendimento - Login</title>
+  <link rel="icon" href="assets/img/logo.png">
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body { background-color: #1e1e1e; color: #fff; font-family: Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+    .login-container { background-color:#2c2c2c; padding:25px; border-radius:10px; width:100%; max-width:350px; border:1px solid #444; text-align:center; }
+    .login-container img { width:90px; margin-bottom:10px; }
+    .login-container h1 { margin-bottom:20px; }
+    .login-container input, .login-container button { width:100%; margin-bottom:12px; padding:10px; border-radius:6px; border:none; }
+    .login-container input { background-color:#1e1e1e; color:#fff; border:1px solid #555; }
+    .login-container button { background-color:#3498db; color:#fff; font-weight:bold; cursor:pointer; }
+    .links a { display:block; margin-top:6px; text-decoration:none; font-weight:bold; }
+    .ativar { color:#2ecc71; }
+  </style>
+</head>
+<body>
+
+<div class="login-container">
+  <img src="assets/img/logo.png" alt="Sistema de Atendimento">
+  <h1>Login</h1>
+
+  <input type="email" id="email" placeholder="Email" autocomplete="username" />
+  <input type="password" id="senha" placeholder="Senha" autocomplete="current-password" />
+  <button id="btnEntrar" type="button">Entrar</button>
+
+  <!-- (Por enquanto) apenas login e cadastro -->
+</div>
+
+<!-- Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<!-- Config centralizada -->
+<script src="firebase-config.js"></script>
+
+<script>
+  if (!window.firebaseConfig) {
+    alert("Config do Firebase não encontrada. Verifique o arquivo firebase-config.js");
+  } else {
+    if (!firebase.apps.length) firebase.initializeApp(window.firebaseConfig);
+    const auth = firebase.auth();
+
+    async function login() {
+      const email = document.getElementById("email").value.trim();
+      const senha = document.getElementById("senha").value.trim();
+
+      if (!email || !senha) {
+        alert("Preencha email e senha");
+        return;
+      }
+
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, senha);
+        const user = cred.user;
+        try {
+          sessionStorage.setItem("uid", user.uid);
+          if (user.email) sessionStorage.setItem("usuario", user.email);
+          sessionStorage.setItem("logado", "1");
+        } catch (_) {}
+
+        window.location.href = "cadastro.html";
+      } catch (e) {
+        console.error(e);
+        alert("Email ou senha inválidos, ou método Email/Senha não está ativado no Firebase.");
+      }
+    }
+
+    document.getElementById("btnEntrar").addEventListener("click", login);
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") login();
+    });
+
+    // Se já estiver logado no Auth, entra direto
+    auth.onAuthStateChanged((user) => {
+      if (user) window.location.href = "cadastro.html";
+    });
+  }
+</script>
+
+</body>
+</html>

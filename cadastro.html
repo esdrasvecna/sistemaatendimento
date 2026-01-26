@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro de pessoas</title>
+
+  <link rel="icon" href="assets/img/logo.png" type="image/png">
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Guard + Menu (mesmo padrão do resto do projeto) -->
+  <script src="menu-loader.js" defer></script>
+
+  <!-- Firebase compat (padrão do projeto) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="auth-guard.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+  <style>
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card { background: #262626; border-radius: 10px; padding: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    .card h2 { margin-bottom: 12px; color: var(--accent); font-size: 18px; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn { background: var(--accent); color: #fff; padding: 10px 14px; border: 0; border-radius: 6px; cursor: pointer; font-weight: 800; }
+    .btn:hover { background: var(--accent-dark); }
+    .btn-ghost { background: #3a3a3a; }
+    .btn-ghost:hover { background: #4a4a4a; }
+    .btn-danger { background: #7a1d1d; }
+    .btn-danger:hover { background: #a52323; }
+
+    .hint { font-size: 12px; opacity: .75; margin-top: -8px; margin-bottom: 12px; }
+
+    .list { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow: auto; padding-right: 4px; }
+    .item { background: #333; border-radius: 8px; padding: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.35); }
+    .item .title { font-weight: 900; }
+    .item .meta { font-size: 12px; opacity: .8; margin-top: 4px; }
+    .item .mini-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .pill { display: inline-flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 999px; background: #1f1f1f; border: 1px solid #444; font-size: 12px; font-weight: 900; }
+    .pill.ok { border-color: #2ecc71; }
+    .pill.warn { border-color: #f1c40f; }
+    .pill.bad { border-color: #e74c3c; }
+
+    .divider { height: 1px; background: #3b3b3b; margin: 14px 0; }
+
+    .report-list { display: flex; flex-direction: column; gap: 10px; max-height: 340px; overflow: auto; padding-right: 4px; }
+    .report { background: #1f1f1f; border: 1px solid #3a3a3a; border-radius: 8px; padding: 10px; }
+    .report .top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .report .top b { font-size: 13px; }
+    .report .small { font-size: 12px; opacity: .8; margin-top: 6px; }
+
+    @media (max-width: 980px) {
+      .grid2 { grid-template-columns: 1fr; }
+      .row, .row-3 { grid-template-columns: 1fr; }
+      .list { max-height: 380px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main>
+    <header>
+      <h1>Cadastro de pessoas</h1>
+    </header>
+
+    <div class="grid2">
+      <!-- Cadastro / Edição -->
+      <section class="card">
+        <h2>Cadastro</h2>
+
+        <form id="pessoaForm">
+          <div class="row">
+            <div>
+              <label>Nome</label>
+              <input id="nome" type="text" placeholder="Nome completo" required />
+            </div>
+            <div>
+              <label>Data de nascimento</label>
+              <input id="dataNascimento" type="date" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>Cartão SUS</label>
+              <input id="cartaoSus" type="text" placeholder="Número do cartão SUS" />
+            </div>
+            <div>
+              <label>Telefone</label>
+              <input id="telefone" type="text" placeholder="(DDD) ..." />
+            </div>
+          </div>
+
+          <label>Endereço</label>
+          <input id="endereco" type="text" placeholder="Rua, número, bairro, cidade" />
+
+          <label>Laudo médico (arquivo)</label>
+          <input id="laudo" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+          <div class="hint" id="laudoHint">Você pode anexar PDF ou imagem. O arquivo ficará salvo no Firebase Storage.</div>
+
+          <label>Observação</label>
+          <textarea id="observacaoPessoa" rows="3" placeholder="Observações gerais sobre a pessoa..."></textarea>
+
+          <div class="actions">
+            <button class="btn" type="submit" id="btnSalvar">Salvar</button>
+            <button class="btn btn-ghost" type="button" id="btnNovo">Novo</button>
+            <button class="btn btn-danger" type="button" id="btnExcluir" style="display:none;">Excluir</button>
+          </div>
+
+          <input type="hidden" id="pessoaId" />
+        </form>
+
+        <div class="divider"></div>
+
+        <h2>Relatório da pessoa</h2>
+        <div class="hint">Selecione uma pessoa na lista ao lado para criar/editar relatórios.</div>
+
+        <form id="relatorioForm">
+          <div class="row">
+            <div>
+              <label>Última data (demanda)</label>
+              <input id="ultimaData" type="date" />
+            </div>
+            <div>
+              <label>Demanda concluída?</label>
+              <select id="concluida">
+                <option value="nao">Não</option>
+                <option value="sim">Sim</option>
+              </select>
+            </div>
+          </div>
+
+          <label>Para onde foi enviada?</label>
+          <input id="enviadoPara" type="text" placeholder="Ex.: UBS, CRAS, Secretaria..." />
+
+          <div class="row-3">
+            <div>
+              <label>Urgência</label>
+              <select id="urgencia">
+                <option value="sem">Sem urgência</option>
+                <option value="baixa">Baixa</option>
+                <option value="alta">Alta</option>
+              </select>
+            </div>
+            <div>
+              <label>Data do relatório</label>
+              <input id="dataRelatorio" type="date" />
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:10px;">
+              <button class="btn" type="submit" id="btnSalvarRelatorio">Salvar relatório</button>
+            </div>
+          </div>
+
+          <label>Observações</label>
+          <textarea id="observacoes" rows="4" placeholder="Detalhes da demanda, encaminhamentos, etc..."></textarea>
+
+          <div class="actions">
+            <button class="btn btn-ghost" type="button" id="btnNovoRelatorio">Novo relatório</button>
+            <button class="btn btn-ghost" type="button" id="btnExportar">Gerar documento final</button>
+            <button class="btn btn-danger" type="button" id="btnExcluirRelatorio" style="display:none;">Excluir relatório</button>
+          </div>
+
+          <input type="hidden" id="relatorioId" />
+        </form>
+
+        <div class="divider"></div>
+
+        <h2>Registros anteriores da pessoa</h2>
+        <div class="report-list" id="listaRelatorios"></div>
+      </section>
+
+      <!-- Pesquisa / Lista -->
+      <section class="card">
+        <h2>Pesquisar</h2>
+
+        <input id="pesquisa" type="text" placeholder="Pesquise por nome, SUS, telefone, endereço, data..." />
+        <div class="hint">A pesquisa varre qualquer campo cadastrado (busca simples). Para bases grandes, dá para otimizar com índices/tokenização.</div>
+
+        <div class="divider"></div>
+
+        <h2>Pessoas</h2>
+        <div class="list" id="listaPessoas"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="cadastro.js"></script>
+</body>
+</html>
