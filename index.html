@@ -6,31 +6,22 @@
   <title>Sistema de Atendimento - Login</title>
   <link rel="icon" href="assets/img/logo.png">
   <link rel="stylesheet" href="style.css">
-
-  <style>
-    body { background-color: #1e1e1e; color: #fff; font-family: Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-    .login-container { background-color:#2c2c2c; padding:25px; border-radius:10px; width:100%; max-width:350px; border:1px solid #444; text-align:center; }
-    .login-container img { width:90px; margin-bottom:10px; }
-    .login-container h1 { margin-bottom:20px; }
-    .login-container input, .login-container button { width:100%; margin-bottom:12px; padding:10px; border-radius:6px; border:none; }
-    .login-container input { background-color:#1e1e1e; color:#fff; border:1px solid #555; }
-    .login-container button { background-color:#3498db; color:#fff; font-weight:bold; cursor:pointer; }
-    .links a { display:block; margin-top:6px; text-decoration:none; font-weight:bold; }
-    .ativar { color:#2ecc71; }
-  </style>
 </head>
 <body>
 
-<div class="login-container">
-  <img src="assets/img/logo.png" alt="Sistema de Atendimento">
-  <h1>Login</h1>
+  <div class="auth-wrap">
+    <div class="glass card login-container">
+      <img class="logo" src="assets/img/logo.png" alt="Sistema de Atendimento">
+      <h1>Login</h1>
+      <p class="sub">Acesso restrito. Entre com seu email e senha.</p>
 
-  <input type="email" id="email" placeholder="Email" autocomplete="username" />
-  <input type="password" id="senha" placeholder="Senha" autocomplete="current-password" />
-  <button id="btnEntrar" type="button">Entrar</button>
-
-  <!-- (Por enquanto) apenas login e cadastro -->
-</div>
+      <div style="margin-top: 14px; display: grid; gap: 10px;">
+        <input class="input" type="email" id="email" placeholder="Email" autocomplete="username" />
+        <input class="input" type="password" id="senha" placeholder="Senha" autocomplete="current-password" />
+        <button class="btn btn-primary" id="btnEntrar" type="button">Entrar</button>
+      </div>
+    </div>
+  </div>
 
 <!-- Firebase (compat) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>

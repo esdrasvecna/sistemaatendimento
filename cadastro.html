@@ -18,64 +18,23 @@
   <script src="auth-guard.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
-  <style>
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .card { background: #262626; border-radius: 10px; padding: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    .card h2 { margin-bottom: 12px; color: var(--accent); font-size: 18px; }
-
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn { background: var(--accent); color: #fff; padding: 10px 14px; border: 0; border-radius: 6px; cursor: pointer; font-weight: 800; }
-    .btn:hover { background: var(--accent-dark); }
-    .btn-ghost { background: #3a3a3a; }
-    .btn-ghost:hover { background: #4a4a4a; }
-    .btn-danger { background: #7a1d1d; }
-    .btn-danger:hover { background: #a52323; }
-
-    .hint { font-size: 12px; opacity: .75; margin-top: -8px; margin-bottom: 12px; }
-
-    .list { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow: auto; padding-right: 4px; }
-    .item { background: #333; border-radius: 8px; padding: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.35); }
-    .item .title { font-weight: 900; }
-    .item .meta { font-size: 12px; opacity: .8; margin-top: 4px; }
-    .item .mini-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-    .pill { display: inline-flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 999px; background: #1f1f1f; border: 1px solid #444; font-size: 12px; font-weight: 900; }
-    .pill.ok { border-color: #2ecc71; }
-    .pill.warn { border-color: #f1c40f; }
-    .pill.bad { border-color: #e74c3c; }
-
-    .divider { height: 1px; background: #3b3b3b; margin: 14px 0; }
-
-    .report-list { display: flex; flex-direction: column; gap: 10px; max-height: 340px; overflow: auto; padding-right: 4px; }
-    .report { background: #1f1f1f; border: 1px solid #3a3a3a; border-radius: 8px; padding: 10px; }
-    .report .top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-    .report .top b { font-size: 13px; }
-    .report .small { font-size: 12px; opacity: .8; margin-top: 6px; }
-
-    @media (max-width: 980px) {
-      .grid2 { grid-template-columns: 1fr; }
-      .row, .row-3 { grid-template-columns: 1fr; }
-      .list { max-height: 380px; }
-    }
-  </style>
 </head>
 
 <body>
 
-  <main>
-    <header>
+  <main class="container">
+    <div class="page-title">
       <h1>Cadastro de pessoas</h1>
-    </header>
+      <p>Cadastre, pesquise e registre atendimentos. Acesso somente com login.</p>
+    </div>
 
-    <div class="grid2">
+    <div class="grid-2">
       <!-- Cadastro / Edição -->
-      <section class="card">
-        <h2>Cadastro</h2>
+      <section class="glass card">
+        <div class="card-title"><h2>Cadastro</h2></div>
 
         <form id="pessoaForm">
-          <div class="row">
+          <div class="grid-2">
             <div>
               <label>Nome</label>
               <input id="nome" type="text" placeholder="Nome completo" required />
@@ -86,7 +45,7 @@
             </div>
           </div>
 
-          <div class="row">
+          <div class="grid-2">
             <div>
               <label>Cartão SUS</label>
               <input id="cartaoSus" type="text" placeholder="Número do cartão SUS" />
@@ -122,7 +81,7 @@
         <div class="hint">Selecione uma pessoa na lista ao lado para criar/editar relatórios.</div>
 
         <form id="relatorioForm">
-          <div class="row">
+          <div class="grid-2">
             <div>
               <label>Última data (demanda)</label>
               <input id="ultimaData" type="date" />
@@ -139,7 +98,7 @@
           <label>Para onde foi enviada?</label>
           <input id="enviadoPara" type="text" placeholder="Ex.: UBS, CRAS, Secretaria..." />
 
-          <div class="row-3">
+          <div class="grid-3">
             <div>
               <label>Urgência</label>
               <select id="urgencia">
@@ -176,8 +135,8 @@
       </section>
 
       <!-- Pesquisa / Lista -->
-      <section class="card">
-        <h2>Pesquisar</h2>
+      <section class="glass card">
+        <div class="card-title"><h2>Pesquisar</h2></div>
 
         <input id="pesquisa" type="text" placeholder="Pesquise por nome, SUS, telefone, endereço, data..." />
         <div class="hint">A pesquisa varre qualquer campo cadastrado (busca simples). Para bases grandes, dá para otimizar com índices/tokenização.</div>
