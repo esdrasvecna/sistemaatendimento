@@ -46,6 +46,19 @@ body::before {
   opacity: 0.35;
 }
 
+/* imagem de fundo (opcional) */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: url('assets/img/logo.png') no-repeat;
+  background-position: 110% -20%;
+  background-size: 420px auto;
+  opacity: 0.06;
+  filter: blur(0px);
+}
+
 /* ================= UTIL ================= */
 .container { width: min(1100px, 92%); margin: 0 auto; }
 .hidden { display: none !important; }

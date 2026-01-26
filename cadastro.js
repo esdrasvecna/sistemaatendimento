@@ -399,7 +399,7 @@ function diffFields(oldData, newData, keys) {
   return changes;
 }
 
-async function salvarRelatorio(e) {
+async async function salvarRelatorio(e) {
   e.preventDefault();
   const pessoaId = $("pessoaId").value.trim();
   if (!pessoaId) {
