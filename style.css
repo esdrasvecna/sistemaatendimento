@@ -46,17 +46,13 @@ body::before {
   opacity: 0.35;
 }
 
-/* imagem de fundo (opcional) */
+/* watermark com logo no background (DESATIVADO)
+   Motivo: a logo pode aparecer "por cima" do layout em alguns navegadores.
+   Se quiser reativar no futuro, troque display para block e ajuste opacity.
+*/
 body::after {
   content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: url('assets/img/logo.png') no-repeat;
-  background-position: 110% -20%;
-  background-size: 420px auto;
-  opacity: 0.06;
-  filter: blur(0px);
+  display: none;
 }
 
 /* ================= UTIL ================= */
@@ -116,16 +112,29 @@ body::after {
 
 /* ================= MENU ================= */
 .menu {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 100;
-  margin: 18px auto 14px;
   width: min(1100px, 92%);
   padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+
+  background: linear-gradient(180deg, var(--glass-2), var(--glass));
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Espaço para o menu fixo não "cobrir" o conteúdo */
+.menu-spacer {
+  height: 86px;
 }
 
 .menu .left,

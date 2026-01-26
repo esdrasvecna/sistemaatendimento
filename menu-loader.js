@@ -21,7 +21,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Evita duplicar menu
     const existing = document.querySelector("nav.menu");
-    if (!existing) document.body.insertBefore(nav, document.body.firstChild);
+    if (!existing) {
+      document.body.insertBefore(nav, document.body.firstChild);
+
+      // Espaçador para o menu fixo não cobrir o conteúdo
+      const spacer = document.createElement("div");
+      spacer.className = "menu-spacer";
+      document.body.insertBefore(spacer, nav.nextSibling);
+    }
 
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
