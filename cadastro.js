@@ -411,13 +411,17 @@ async function salvarRelatorio(e) {
   }
 
   const relId = $("relatorioId").value.trim();
-  const payload = {
+  const payloadData = {
     ultimaData: $("ultimaData").value,
     concluida: $("concluida").value === "sim",
     enviadoPara: $("enviadoPara").value.trim(),
     urgencia: $("urgencia").value,
     dataRelatorio: $("dataRelatorio").value,
-    observacoes: $("observacoes").value.trim(),
+    observacoes: $("observacoes").value.trim()
+  };
+
+  // Metadados (não entram no histórico, porque serverTimestamp não pode ficar dentro de arrays)
+  const payloadMeta = {
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedBy: usuario
   };
@@ -427,7 +431,8 @@ async function salvarRelatorio(e) {
 
     if (!relId) {
       const docRef = await baseRef.add({
-        ...payload,
+        ...payloadData,
+        ...payloadMeta,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         createdBy: usuario,
         historico: [
@@ -435,7 +440,7 @@ async function salvarRelatorio(e) {
             at: new Date().toISOString(),
             by: usuario,
             tipo: "criado",
-            changes: diffFields({}, payload, Object.keys(payload))
+            changes: diffFields({}, payloadData, Object.keys(payloadData))
           }
         ]
       });
@@ -458,7 +463,8 @@ async function salvarRelatorio(e) {
 
       await ref.set(
         {
-          ...payload,
+          ...payloadData,
+          ...payloadMeta,
           historico: firebase.firestore.FieldValue.arrayUnion(historicoEntry)
         },
         { merge: true }
