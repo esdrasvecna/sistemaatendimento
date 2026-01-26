@@ -199,6 +199,7 @@ async function uploadLaudoIfAny(pessoaId, previous) {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `laudos/${pessoaId}/${Date.now()}_${safeName}`;
   const ref = storage.ref(path);
+  // Upload pode falhar por regras/permissões. Mantemos erro explícito.
   await ref.put(file);
   const url = await ref.getDownloadURL();
 
@@ -580,6 +581,7 @@ async function exportarDocumentoFinal() {
       ["Telefone", p.telefone || "-"],
       ["Endereço", p.endereco || "-"],
       ["Observação", p.observacao || "-"],
+      ["Anexo (laudo)", p.laudoUrl ? (p.laudoNome || "(arquivo anexado)") : "-"],
     ];
 
     if (doc.autoTable) {
@@ -635,10 +637,27 @@ async function exportarDocumentoFinal() {
             fr.readAsDataURL(blob);
           });
 
-          // calcula tamanho para caber na página
+          // calcula tamanho mantendo proporção real (quando possível)
           const maxW = pageW - margin * 2;
-          const imgW = maxW;
-          const imgH = imgW * 0.6;
+          let imgW = maxW;
+          let imgH = imgW * 0.75;
+          try {
+            const img = new Image();
+            img.src = dataUrl;
+            await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+            if (img.naturalWidth && img.naturalHeight) {
+              const ratio = img.naturalHeight / img.naturalWidth;
+              imgH = imgW * ratio;
+              // limita altura para não estourar absurdamente
+              const maxH = doc.internal.pageSize.getHeight() - margin * 2;
+              if (imgH > maxH) {
+                imgH = maxH;
+                imgW = imgH / ratio;
+              }
+            }
+          } catch (_) {
+            // mantém fallback
+          }
 
           if (y + imgH > doc.internal.pageSize.getHeight() - margin) {
             doc.addPage();
