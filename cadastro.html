@@ -1,157 +1,33 @@
+
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cadastro de pessoas</title>
-
-  <link rel="icon" href="assets/img/logo.png" type="image/png">
-  <link rel="stylesheet" href="style.css" />
-
-  <!-- Guard + Menu (mesmo padrão do resto do projeto) -->
-  <script src="menu-loader.js" defer></script>
-
-  <!-- Firebase compat (padrão do projeto) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="auth-guard.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<meta charset="UTF-8">
+<title>Cadastro de Pessoas</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" src="cadastro.js"></script>
 </head>
+<body class="glass-bg">
+<header class="menu glass">Cadastro de Pessoas</header>
+<div class="container">
+<div class="card glass">
+<h3>Nova Pessoa</h3>
+<input id="nome" placeholder="Nome">
+<input id="sus" placeholder="Cartão SUS">
+<button id="salvarPessoa">Salvar Pessoa</button>
+</div>
 
-<body>
-  <div id="authLoading" class="auth-loading">Carregando…</div>
-
-  <main class="container">
-    <div class="page-title">
-      <h1>Cadastro de pessoas</h1>
-      <p>Cadastre, pesquise e registre atendimentos. Acesso somente com login.</p>
-    </div>
-
-    <div class="grid-2">
-      <!-- Cadastro / Edição -->
-      <section class="glass card">
-        <div class="card-title"><h2>Cadastro</h2></div>
-
-        <form id="pessoaForm">
-          <div class="grid-2">
-            <div>
-              <label>Nome</label>
-              <input id="nome" type="text" placeholder="Nome completo" required />
-            </div>
-            <div>
-              <label>Data de nascimento</label>
-              <input id="dataNascimento" type="date" required />
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div>
-              <label>Cartão SUS</label>
-              <input id="cartaoSus" type="text" placeholder="Número do cartão SUS" />
-            </div>
-            <div>
-              <label>Telefone</label>
-              <input id="telefone" type="text" placeholder="(DDD) ..." />
-            </div>
-          </div>
-
-          <label>Endereço</label>
-          <input id="endereco" type="text" placeholder="Rua, número, bairro, cidade" />
-
-          <label>Laudo médico (arquivo)</label>
-          <input id="laudo" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
-          <div class="hint" id="laudoHint">Você pode anexar PDF ou imagem. O arquivo ficará salvo no Firebase Storage.</div>
-
-          <label>Observação</label>
-          <textarea id="observacaoPessoa" rows="3" placeholder="Observações gerais sobre a pessoa..."></textarea>
-
-          <div class="actions">
-            <button class="btn" type="submit" id="btnSalvar">Salvar</button>
-            <button class="btn btn-ghost" type="button" id="btnNovo">Novo</button>
-            <button class="btn btn-danger" type="button" id="btnExcluir" style="display:none;">Excluir</button>
-          </div>
-
-          <input type="hidden" id="pessoaId" />
-        </form>
-
-        <div class="divider"></div>
-
-        <h2>Relatório da pessoa</h2>
-        <div class="hint">Selecione uma pessoa na lista ao lado para criar/editar relatórios.</div>
-
-        <form id="relatorioForm">
-          <div class="grid-2">
-            <div>
-              <label>Última data (demanda)</label>
-              <input id="ultimaData" type="date" />
-            </div>
-            <div>
-              <label>Demanda concluída?</label>
-              <select id="concluida">
-                <option value="nao">Não</option>
-                <option value="sim">Sim</option>
-              </select>
-            </div>
-          </div>
-
-          <label>Para onde foi enviada?</label>
-          <input id="enviadoPara" type="text" placeholder="Ex.: UBS, CRAS, Secretaria..." />
-
-          <div class="grid-3">
-            <div>
-              <label>Urgência</label>
-              <select id="urgencia">
-                <option value="sem">Sem urgência</option>
-                <option value="baixa">Baixa</option>
-                <option value="alta">Alta</option>
-              </select>
-            </div>
-            <div>
-              <label>Data do relatório</label>
-              <input id="dataRelatorio" type="date" />
-            </div>
-            <div style="display:flex; align-items:flex-end; gap:10px;">
-              <button class="btn" type="submit" id="btnSalvarRelatorio">Salvar relatório</button>
-            </div>
-          </div>
-
-          <label>Observações</label>
-          <textarea id="observacoes" rows="4" placeholder="Detalhes da demanda, encaminhamentos, etc..."></textarea>
-
-          <div class="actions">
-            <button class="btn btn-ghost" type="button" id="btnNovoRelatorio">Novo relatório</button>
-            <button class="btn btn-ghost" type="button" id="btnExportar">Gerar PDF (documento final)</button>
-            <button class="btn btn-danger" type="button" id="btnExcluirRelatorio" style="display:none;">Excluir relatório</button>
-          </div>
-
-          <input type="hidden" id="relatorioId" />
-        </form>
-
-        <div class="divider"></div>
-
-        <h2>Registros anteriores da pessoa</h2>
-        <div class="report-list" id="listaRelatorios"></div>
-      </section>
-
-      <!-- Pesquisa / Lista -->
-      <section class="glass card">
-        <div class="card-title"><h2>Pesquisar</h2></div>
-
-        <input id="pesquisa" type="text" placeholder="Pesquise por nome, SUS, telefone, endereço, data..." />
-        <div class="hint">A pesquisa varre qualquer campo cadastrado (busca simples). Para bases grandes, dá para otimizar com índices/tokenização.</div>
-
-        <div class="divider"></div>
-
-        <h2>Pessoas</h2>
-        <div class="list" id="listaPessoas"></div>
-      </section>
-    </div>
-  </main>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="cadastro.js"></script>
+<div class="card glass">
+<h3>Relatório</h3>
+<textarea id="textoRelatorio" placeholder="Descrição"></textarea>
+<select id="urgencia">
+<option value="sem">Sem urgência</option>
+<option value="baixa">Baixa</option>
+<option value="alta">Alta</option>
+</select>
+<input type="file" id="anexoRelatorio">
+<button id="salvarRelatorio">Salvar Relatório</button>
+</div>
+</div>
 </body>
 </html>

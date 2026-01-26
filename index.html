@@ -1,78 +1,19 @@
+
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Atendimento - Login</title>
-  <link rel="icon" href="assets/img/logo.png">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Login</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" src="login.js"></script>
 </head>
-<body>
-
-  <div class="auth-wrap">
-    <div class="glass card login-container">
-      <img class="logo" src="assets/img/logo.png" alt="Sistema de Atendimento">
-      <h1>Login</h1>
-      <p class="sub">Acesso restrito. Entre com seu email e senha.</p>
-
-      <div style="margin-top: 14px; display: grid; gap: 10px;">
-        <input class="input" type="email" id="email" placeholder="Email" autocomplete="username" />
-        <input class="input" type="password" id="senha" placeholder="Senha" autocomplete="current-password" />
-        <button class="btn btn-primary" id="btnEntrar" type="button">Entrar</button>
-      </div>
-    </div>
-  </div>
-
-<!-- Firebase (compat) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
-<!-- Config centralizada -->
-<script src="firebase-config.js"></script>
-
-<script>
-  if (!window.firebaseConfig) {
-    alert("Config do Firebase não encontrada. Verifique o arquivo firebase-config.js");
-  } else {
-    if (!firebase.apps.length) firebase.initializeApp(window.firebaseConfig);
-    const auth = firebase.auth();
-
-    async function login() {
-      const email = document.getElementById("email").value.trim();
-      const senha = document.getElementById("senha").value.trim();
-
-      if (!email || !senha) {
-        alert("Preencha email e senha");
-        return;
-      }
-
-      try {
-        const cred = await auth.signInWithEmailAndPassword(email, senha);
-        const user = cred.user;
-        try {
-          sessionStorage.setItem("uid", user.uid);
-          if (user.email) sessionStorage.setItem("usuario", user.email);
-          sessionStorage.setItem("logado", "1");
-        } catch (_) {}
-
-        window.location.href = "cadastro.html";
-      } catch (e) {
-        console.error(e);
-        alert("Email ou senha inválidos, ou método Email/Senha não está ativado no Firebase.");
-      }
-    }
-
-    document.getElementById("btnEntrar").addEventListener("click", login);
-    document.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") login();
-    });
-
-    // Se já estiver logado no Auth, entra direto
-    auth.onAuthStateChanged((user) => {
-      if (user) window.location.href = "cadastro.html";
-    });
-  }
-</script>
-
+<body class="glass-bg">
+<div class="card glass">
+<h2>Login</h2>
+<input id="email" placeholder="Email">
+<input id="senha" type="password" placeholder="Senha">
+<button id="loginBtn">Entrar</button>
+<p id="erro"></p>
+</div>
 </body>
 </html>
