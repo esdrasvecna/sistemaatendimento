@@ -109,9 +109,25 @@ function renderPessoas() {
   if (!container) return;
 
   const q = normalize($("pesquisa")?.value || "");
+  const ord = $("ordenacao")?.value || "recentes";
   container.innerHTML = "";
 
-  const filtered = pessoas.filter((p) => includesAnyField(p, q)).slice(0, 500);
+  let filtered = pessoas.filter((p) => includesAnyField(p, q));
+
+  // Ordenação (client-side)
+  if (ord === "a-z" || ord === "z-a") {
+    filtered.sort((a, b) => normalize(a.nome).localeCompare(normalize(b.nome)));
+    if (ord === "z-a") filtered.reverse();
+  } else {
+    // recentes: usa createdAt quando existe, senão fallback
+    filtered.sort((a, b) => {
+      const da = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+      const db = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+      return db - da;
+    });
+  }
+
+  filtered = filtered.slice(0, 500);
 
   if (!filtered.length) {
     container.innerHTML = `<div class="item"><div class="meta">Nenhuma pessoa encontrada.</div></div>`;
@@ -143,6 +159,7 @@ function renderPessoas() {
     };
   });
 }
+
 
 function renderRelatorios() {
   const box = $("listaRelatorios");

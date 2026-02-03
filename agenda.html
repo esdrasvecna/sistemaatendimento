@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vereadora Vanessa da Usina · Agenda</title>
+
+  <link rel="icon" href="assets/img/logo.png" type="image/png">
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="menu-loader.js" defer></script>
+
+  <!-- Firebase compat (padrão do projeto) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="auth-guard.js"></script>
+</head>
+
+<body>
+  <div id="authLoading" class="auth-loading">
+    <div class="loader"></div>
+    <div class="meta">Verificando acesso...</div>
+  </div>
+
+  <main class="container hidden" id="mainApp">
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/img/logo.png" alt="Logo" class="logo" />
+        <div>
+          <div class="title">Agenda</div>
+          <div class="subtitle">Gerencie compromissos e lembretes</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Editor -->
+      <section class="glass card">
+        <div class="card-title"><h2>Novo compromisso</h2></div>
+
+        <div class="hint" id="statusAgenda"></div>
+
+        <input type="hidden" id="agendaId" />
+
+        <label class="label">Data e hora</label>
+        <input id="agendaData" type="datetime-local" />
+
+        <label class="label">Título</label>
+        <input id="agendaTitulo" type="text" placeholder="Ex.: Reunião com comunidade" />
+
+        <label class="label">Observação</label>
+        <textarea id="agendaObs" rows="5" placeholder="Informações adicionais, endereço, contatos, etc."></textarea>
+
+        <label class="label">Imagem (opcional)</label>
+        <input id="agendaImagem" type="file" accept="image/*" />
+
+        <div class="mini-actions" style="margin-top: 12px;">
+          <button class="btn" id="btnSalvarAgenda">Salvar</button>
+          <button class="btn btn-ghost" id="btnNovaAgenda">Novo</button>
+          <button class="btn btn-red" id="btnExcluirAgenda" style="display:none;">Excluir</button>
+        </div>
+
+        <div class="divider"></div>
+        <div class="hint">Dica: clique em um item da lista para editar.</div>
+      </section>
+
+      <!-- Lista -->
+      <section class="glass card">
+        <div class="card-title"><h2>Pesquisar</h2></div>
+
+        <input id="pesquisaAgenda" type="text" placeholder="Pesquisar por título/observação..." />
+
+        <label class="label" style="margin-top: 10px;">Ordenação</label>
+        <select id="ordenacaoAgenda">
+          <option value="proximos">Próximos primeiro</option>
+          <option value="recentes">Mais recentes primeiro</option>
+          <option value="a-z">Título (A-Z)</option>
+          <option value="z-a">Título (Z-A)</option>
+        </select>
+
+        <div class="divider"></div>
+
+        <h2>Itens</h2>
+        <div class="list" id="listaAgenda"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="agenda.js"></script>
+</body>
+</html>

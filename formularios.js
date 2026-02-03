@@ -16,6 +16,70 @@ const normalize = (s) =>
 
 function makeId() {
   return (Math.random().toString(16).slice(2) + Date.now().toString(16)).slice(0, 16);
+
+
+function gerarPdfResposta(resp) {
+  try {
+    const { jsPDF } = window.jspdf || {};
+    if (!jsPDF) {
+      alert("Biblioteca de PDF não carregou. Verifique sua internet.");
+      return;
+    }
+    const doc = new jsPDF();
+
+    const title = resp.formTitulo || "Formulário";
+    const when = resp.createdAt?.toDate ? resp.createdAt.toDate().toLocaleString("pt-BR") : "";
+    const pessoa = resp.pessoaNome || "-";
+
+    doc.setFontSize(16);
+    doc.text(title, 14, 18);
+    doc.setFontSize(11);
+    doc.text(`Pessoa: ${pessoa}`, 14, 26);
+    if (when) doc.text(`Data: ${when}`, 14, 32);
+
+    const rows = [];
+    const respostas = resp.respostas || {};
+    // Tenta preservar a ordem do formulário (se existir no cache)
+    const form = (formularios || []).find((f) => f.id === resp.formId);
+    if (form?.campos?.length) {
+      for (const c of form.campos) {
+        const val = respostas[c.id] ?? "";
+        rows.push([c.label || "Campo", String(val)]);
+      }
+    } else {
+      for (const k of Object.keys(respostas)) {
+        rows.push([k, String(respostas[k])]);
+      }
+    }
+
+    if (doc.autoTable) {
+      doc.autoTable({
+        startY: 40,
+        head: [["Campo", "Resposta"]],
+        body: rows.length ? rows : [["-", "-"]],
+        styles: { fontSize: 10, cellPadding: 2 },
+        headStyles: { fontSize: 10 },
+        columnStyles: { 0: { cellWidth: 55 }, 1: { cellWidth: 125 } },
+      });
+    } else {
+      // fallback simples
+      let y = 42;
+      doc.text("Campo / Resposta:", 14, y);
+      y += 8;
+      for (const [a, b] of rows.slice(0, 40)) {
+        doc.text(`${a}: ${b}`.slice(0, 110), 14, y);
+        y += 6;
+        if (y > 280) break;
+      }
+    }
+
+    const filename = `formulario_${(resp.formTitulo || "resposta").replace(/\s+/g, "_")}_${Date.now()}.pdf`;
+    doc.save(filename);
+  } catch (e) {
+    console.error(e);
+    alert("Não foi possível gerar o PDF.");
+  }
+}
 }
 
 if (!firebase.apps.length) firebase.initializeApp(window.firebaseConfig);
@@ -62,6 +126,21 @@ function renderCamposBuilder() {
       </div>
     `;
     box.appendChild(div);
+  });
+
+  box.querySelectorAll("button[data-action='pdf']").forEach((b) => {
+    b.onclick = async () => {
+      const id = b.getAttribute("data-id");
+      if (!id) return;
+      try {
+        const snap = await db.collection("respostas").doc(id).get();
+        if (!snap.exists) return;
+        gerarPdfResposta({ id: snap.id, ...snap.data() });
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao buscar a resposta.");
+      }
+    };
   });
 
   box.querySelectorAll("button[data-act]").forEach((b) => {
@@ -129,6 +208,21 @@ function renderListaFormularios() {
       </div>
     `;
     box.appendChild(div);
+  });
+
+  box.querySelectorAll("button[data-action='pdf']").forEach((b) => {
+    b.onclick = async () => {
+      const id = b.getAttribute("data-id");
+      if (!id) return;
+      try {
+        const snap = await db.collection("respostas").doc(id).get();
+        if (!snap.exists) return;
+        gerarPdfResposta({ id: snap.id, ...snap.data() });
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao buscar a resposta.");
+      }
+    };
   });
 
   box.querySelectorAll("button[data-open]").forEach((b) => {
@@ -390,8 +484,26 @@ function renderRespostasRecentes(resps) {
     div.innerHTML = `
       <div class="title">${r.formTitulo || "Formulário"}</div>
       <div class="meta">Pessoa: ${r.pessoaNome || "-"} · ${when}</div>
+      <div class="mini-actions">
+        <button class="btn btn-ghost" data-action="pdf" data-id="${r.id || ""}">Imprimir / PDF</button>
+      </div>
     `;
     box.appendChild(div);
+  });
+
+  box.querySelectorAll("button[data-action='pdf']").forEach((b) => {
+    b.onclick = async () => {
+      const id = b.getAttribute("data-id");
+      if (!id) return;
+      try {
+        const snap = await db.collection("respostas").doc(id).get();
+        if (!snap.exists) return;
+        gerarPdfResposta({ id: snap.id, ...snap.data() });
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao buscar a resposta.");
+      }
+    };
   });
 }
 
@@ -448,7 +560,7 @@ function boot() {
     .limit(30)
     .onSnapshot(
       (snap) => {
-        const r = snap.docs.map((d) => d.data());
+        const r = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         renderRespostasRecentes(r);
       },
       (err) => {
