@@ -562,6 +562,40 @@ function boot() {
   const pesquisa = $("pesquisa");
   if (pesquisa) pesquisa.addEventListener("input", renderPessoas);
 
+  // ordenação
+  const ordenacao = $("ordenacao");
+  if (ordenacao) ordenacao.addEventListener("change", renderPessoas);
+
+  // lista de pessoas ocultável (abre ao focar/clicar na pesquisa)
+  const wrap = $("pessoasWrap");
+  const btnToggle = $("toggleListaPessoas");
+
+  const setOpen = (open) => {
+    if (!wrap || !btnToggle) return;
+    wrap.classList.toggle("collapsed", !open);
+    btnToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    const label = btnToggle.querySelector("span");
+    if (label) label.textContent = open ? "▾ Ocultar pessoas" : "▸ Mostrar pessoas";
+    // quando abrir, garante que a lista esteja renderizada com o filtro atual
+    if (open) renderPessoas();
+  };
+
+  if (wrap) {
+    // inicia fechado
+    setOpen(false);
+  }
+  if (btnToggle) {
+    btnToggle.addEventListener("click", () => {
+      const isOpen = btnToggle.getAttribute("aria-expanded") === "true";
+      setOpen(!isOpen);
+    });
+  }
+  if (pesquisa) {
+    const openOnFocus = () => setOpen(true);
+    pesquisa.addEventListener("focus", openOnFocus);
+    pesquisa.addEventListener("click", openOnFocus);
+  }
+
   // pessoa
   $("pessoaForm").addEventListener("submit", upsertPessoa);
   $("btnNovo").addEventListener("click", resetPessoaForm);

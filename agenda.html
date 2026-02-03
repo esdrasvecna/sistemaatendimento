@@ -28,7 +28,6 @@
   <main class="container hidden" id="mainApp">
     <header class="topbar">
       <div class="brand">
-        <img src="assets/img/logo.png" alt="Logo" class="logo" />
         <div>
           <div class="title">Agenda</div>
           <div class="subtitle">Gerencie compromissos e lembretes</div>
@@ -36,7 +35,7 @@
       </div>
     </header>
 
-    <div class="grid">
+    <div class="grid-3">
       <!-- Editor -->
       <section class="glass card">
         <div class="card-title"><h2>Novo compromisso</h2></div>
@@ -84,7 +83,29 @@
         <div class="divider"></div>
 
         <h2>Itens</h2>
-        <div class="list" id="listaAgenda"></div>
+        <div class="list list-scroll" id="listaAgenda"></div>
+      </section>
+
+      <!-- Exportar WhatsApp -->
+      <section class="glass card">
+        <div class="card-title"><h2>Texto para WhatsApp</h2></div>
+
+        <label class="label">Período</label>
+        <select id="whatsPeriodo">
+          <option value="dia">Hoje</option>
+          <option value="semana">Próximos 7 dias</option>
+          <option value="15">Próximos 15 dias</option>
+          <option value="mes">Este mês</option>
+        </select>
+
+        <div class="mini-actions" style="margin-top: 12px;">
+          <button class="btn" id="btnGerarWhats">Gerar texto</button>
+          <button class="btn btn-ghost" id="btnCopiarWhats">Copiar</button>
+        </div>
+
+        <label class="label" style="margin-top: 12px;">Prévia</label>
+        <textarea id="whatsPreview" rows="10" placeholder="Clique em 'Gerar texto' para montar uma mensagem bonita..." readonly></textarea>
+        <div class="hint">Dica: depois de copiar, cole direto no WhatsApp. (A formatação com *negrito* funciona.)</div>
       </section>
     </div>
   </main>

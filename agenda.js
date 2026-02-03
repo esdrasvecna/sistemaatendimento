@@ -24,6 +24,104 @@ let itens = [];
 let itemAtual = null;
 let unsubAgenda = null;
 
+// ===== Exportação WhatsApp =====
+function startOfDay(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function endOfDay(d) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
+function getAgendaDate(it) {
+  return it?.dataHora?.toDate ? it.dataHora.toDate() : new Date(it?.dataHora || 0);
+}
+
+function fmtDateBR(d) {
+  try {
+    return d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+  } catch {
+    return "";
+  }
+}
+
+function fmtTimeBR(d) {
+  try {
+    return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "";
+  }
+}
+
+function periodoToRange(key) {
+  const now = new Date();
+  const start = startOfDay(now);
+  let end;
+
+  if (key === "dia") {
+    end = endOfDay(now);
+  } else if (key === "semana") {
+    end = endOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 6));
+  } else if (key === "15") {
+    end = endOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 14));
+  } else {
+    // mes
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    end = endOfDay(lastDay);
+  }
+  return { start, end };
+}
+
+function buildWhatsAppText(periodKey) {
+  const { start, end } = periodoToRange(periodKey);
+
+  const list = itens
+    .slice()
+    .map((it) => ({ ...it, _d: getAgendaDate(it) }))
+    .filter((it) => it._d instanceof Date && !isNaN(it._d) && it._d >= start && it._d <= end)
+    .sort((a, b) => a._d - b._d)
+    .slice(0, 200);
+
+  const headerMap = {
+    dia: "📅 *Agenda de hoje*",
+    semana: "📅 *Agenda - próximos 7 dias*",
+    "15": "📅 *Agenda - próximos 15 dias*",
+    mes: "📅 *Agenda - este mês*",
+  };
+
+  const header = headerMap[periodKey] || "📅 *Agenda*";
+  if (!list.length) return `${header}\n\nSem compromissos nesse período.`;
+
+  // agrupa por dia
+  const groups = new Map();
+  for (const it of list) {
+    const key = it._d.toLocaleDateString("pt-BR");
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(it);
+  }
+
+  let out = `${header}\n\n`;
+  for (const [dayKey, dayItems] of groups.entries()) {
+    const d = dayItems[0]._d;
+    out += `*${fmtDateBR(d)}*\n`;
+    for (const it of dayItems) {
+      const t = fmtTimeBR(it._d);
+      const title = safe(it.titulo, "(sem título)");
+      const obs = safe(it.obs, "").replace(/\s+/g, " ").trim();
+      out += `• ${t} — ${title}`;
+      if (obs) out += `\n  _${obs}_`;
+      out += "\n";
+    }
+    out += "\n";
+  }
+
+  return out.trim();
+}
+
 function setStatus(msg) {
   const el = $("statusAgenda");
   if (el) el.textContent = msg || "";
@@ -245,6 +343,49 @@ function boot() {
 
   $("pesquisaAgenda")?.addEventListener("input", renderLista);
   $("ordenacaoAgenda")?.addEventListener("change", renderLista);
+
+  // WhatsApp
+  const renderWhats = () => {
+    const periodo = $("whatsPeriodo")?.value || "dia";
+    const txt = buildWhatsAppText(periodo);
+    const box = $("whatsPreview");
+    if (box) box.value = txt;
+  };
+
+  $("btnGerarWhats")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    renderWhats();
+  });
+
+  $("whatsPeriodo")?.addEventListener("change", () => {
+    // se já existe prévia, atualiza automaticamente
+    const box = $("whatsPreview");
+    if (box && box.value?.trim()) renderWhats();
+  });
+
+  $("btnCopiarWhats")?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const box = $("whatsPreview");
+    const text = box?.value || "";
+    if (!text.trim()) {
+      renderWhats();
+    }
+    const finalText = (box?.value || "").trim();
+    if (!finalText) return;
+    try {
+      await navigator.clipboard.writeText(finalText);
+      setStatus("Texto copiado. Cole no WhatsApp.");
+    } catch {
+      // fallback
+      if (box) {
+        box.removeAttribute("readonly");
+        box.select();
+        document.execCommand("copy");
+        box.setAttribute("readonly", "readonly");
+        setStatus("Texto copiado. Cole no WhatsApp.");
+      }
+    }
+  });
 
   unsubAgenda?.();
   unsubAgenda = db

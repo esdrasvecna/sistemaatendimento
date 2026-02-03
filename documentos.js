@@ -113,54 +113,76 @@
       arr.sort((a, b) => (b._ts || 0) - (a._ts || 0));
     }
 
+    // modo cards
+    els.lista.classList.add("cards-grid");
+
     if (!arr.length) {
       els.lista.innerHTML = `<div class="hint">Nenhum documento encontrado.</div>`;
       return;
     }
 
-    els.lista.innerHTML = "";
+    // Agrupa por categoria (mantém filtro/pesquisa/ordenação)
+    const groups = new Map();
     for (const d of arr) {
-      const item = document.createElement("div");
-      item.className = "list-item";
-      item.style.display = "flex";
-      item.style.gap = "10px";
-      item.style.justifyContent = "space-between";
-      item.style.alignItems = "center";
+      const key = (d.categoria || "Outros").trim() || "Outros";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(d);
+    }
 
-      const left = document.createElement("div");
-      const title = document.createElement("div");
-      title.style.fontWeight = "700";
-      title.textContent = d.titulo || d.filename || "Documento";
+    els.lista.innerHTML = "";
 
-      const meta = document.createElement("div");
-      meta.className = "hint";
-      const dataTxt = d.createdAt ? new Date(d.createdAt).toLocaleString("pt-BR") : "";
-      meta.textContent = `${d.categoria || ""}${dataTxt ? " · " + dataTxt : ""}`.trim();
+    const orderedCats = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    for (const catName of orderedCats) {
+      const catBox = document.createElement("div");
+      catBox.className = "doc-group";
 
-      left.appendChild(title);
-      left.appendChild(meta);
+      const h = document.createElement("div");
+      h.className = "doc-group-title";
+      h.innerHTML = `<span>${catName}</span><span class="badge">${groups.get(catName).length}</span>`;
 
-      const actions = document.createElement("div");
-      actions.className = "mini-actions";
+      const grid = document.createElement("div");
+      grid.className = "doc-cards";
 
-      const a = document.createElement("a");
-      a.className = "btn btn-ghost";
-      a.href = d.downloadUrl || "#";
-      a.target = "_blank";
-      a.rel = "noopener";
-      a.textContent = "Baixar";
+      for (const d of groups.get(catName)) {
+        const card = document.createElement("div");
+        card.className = "doc-card";
 
-      const btnDel = document.createElement("button");
-      btnDel.className = "btn btn-red";
-      btnDel.textContent = "Excluir";
-      btnDel.onclick = () => deletarDocumento(d);
+        const title = document.createElement("div");
+        title.className = "doc-title";
+        title.textContent = d.titulo || d.filename || "Documento";
 
-      actions.appendChild(a);
-      actions.appendChild(btnDel);
+        const dataTxt = d.createdAt ? new Date(d.createdAt).toLocaleString("pt-BR") : "";
+        const meta = document.createElement("div");
+        meta.className = "doc-meta";
+        meta.textContent = [d.filename ? `Arquivo: ${d.filename}` : "", dataTxt ? `Criado: ${dataTxt}` : ""].filter(Boolean).join(" · ");
 
-      item.appendChild(left);
-      item.appendChild(actions);
-      els.lista.appendChild(item);
+        const actions = document.createElement("div");
+        actions.className = "mini-actions";
+
+        const a = document.createElement("a");
+        a.className = "btn btn-ghost";
+        a.href = d.downloadUrl || "#";
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.textContent = "Abrir";
+
+        const btnDel = document.createElement("button");
+        btnDel.className = "btn btn-red";
+        btnDel.textContent = "Excluir";
+        btnDel.onclick = () => deletarDocumento(d);
+
+        actions.appendChild(a);
+        actions.appendChild(btnDel);
+
+        card.appendChild(title);
+        if (meta.textContent) card.appendChild(meta);
+        card.appendChild(actions);
+        grid.appendChild(card);
+      }
+
+      catBox.appendChild(h);
+      catBox.appendChild(grid);
+      els.lista.appendChild(catBox);
     }
   }
 

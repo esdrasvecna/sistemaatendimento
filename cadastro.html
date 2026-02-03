@@ -140,6 +140,13 @@
         <div class="card-title"><h2>Pesquisar</h2></div>
 
         <input id="pesquisa" type="text" placeholder="Pesquise por nome, SUS, telefone, endereço, data..." />
+
+        <div class="mini-actions" style="margin-top: 10px;">
+          <button class="btn btn-ghost" type="button" id="toggleListaPessoas" aria-expanded="false" style="width:100%; justify-content:space-between;">
+            <span>▸ Mostrar pessoas</span>
+            <span class="hint" style="margin:0;">(clique na pesquisa para abrir)</span>
+          </button>
+        </div>
         <label class="label" style="margin-top: 10px;">Ordenação</label>
         <select id="ordenacao">
           <option value="recentes">Mais recentes primeiro</option>
@@ -151,8 +158,10 @@
 
         <div class="divider"></div>
 
-        <h2>Pessoas</h2>
-        <div class="list" id="listaPessoas"></div>
+        <div id="pessoasWrap" class="collapsible collapsed" style="margin-top: 12px;">
+          <h2 style="margin-top:0;">Pessoas</h2>
+          <div class="list list-scroll" id="listaPessoas"></div>
+        </div>
       </section>
     </div>
   </main>
