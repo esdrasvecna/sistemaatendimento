@@ -17,7 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
     nav.innerHTML = `
       <a href="cadastro.html">Cadastro de pessoas</a>
       <a href="formularios.html">Formulários</a>
-      <button id="logoutBtn" class="btn-red">Sair</button>
+            <a href="agenda.html">Agenda</a>
+<button id="logoutBtn" class="btn-red">Sair</button>
     `;
 
     // Evita duplicar menu

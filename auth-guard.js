@@ -26,5 +26,7 @@
     // libera UI
     const ov = document.getElementById("authLoading");
     if (ov) ov.style.display = "none";
+    const main = document.getElementById("mainApp");
+    if (main) main.classList.remove("hidden");
   });
 })();
