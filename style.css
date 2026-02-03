@@ -401,6 +401,25 @@ label {
 .collapsible.collapsed { display: none; }
 .list-scroll { max-height: 420px; overflow: auto; padding-right: 4px; }
 
+/* ================= AGENDA STATUS ================= */
+.agenda-item.status-concluida {
+  opacity: 0.82;
+}
+
+.agenda-item.status-concluida .title {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.agenda-item.status-cancelada {
+  opacity: 0.65;
+}
+
+.agenda-item.status-cancelada .title {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
 /* ================= AGENDA / DOCS CARDS ================= */
 .cards-grid { display: block; }
 

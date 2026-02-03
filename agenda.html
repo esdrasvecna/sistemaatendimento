@@ -53,12 +53,22 @@
         <label class="label">Observação</label>
         <textarea id="agendaObs" rows="5" placeholder="Informações adicionais, endereço, contatos, etc."></textarea>
 
+        <label class="label">Status</label>
+        <select id="agendaStatus">
+          <option value="ativa">Ativa</option>
+          <option value="concluida">Concluída</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+
         <label class="label">Imagem (opcional)</label>
         <input id="agendaImagem" type="file" accept="image/*" />
 
         <div class="mini-actions" style="margin-top: 12px;">
           <button class="btn" id="btnSalvarAgenda">Salvar</button>
           <button class="btn btn-ghost" id="btnNovaAgenda">Novo</button>
+          <button class="btn btn-ghost" id="btnConcluirAgenda" style="display:none;">Concluir</button>
+          <button class="btn btn-danger" id="btnCancelarAgenda" style="display:none;">Cancelar</button>
+          <button class="btn btn-ghost" id="btnReabrirAgenda" style="display:none;">Reabrir</button>
           <button class="btn btn-red" id="btnExcluirAgenda" style="display:none;">Excluir</button>
         </div>
 

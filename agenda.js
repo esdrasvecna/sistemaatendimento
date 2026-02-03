@@ -24,6 +24,37 @@ let itens = [];
 let itemAtual = null;
 let unsubAgenda = null;
 
+// ===== Status =====
+// status possíveis: "ativa" | "concluida" | "cancelada"
+function normStatus(s) {
+  const v = (s || "").toString().toLowerCase().trim();
+  if (v === "concluida" || v === "concluída") return "concluida";
+  if (v === "cancelada") return "cancelada";
+  return "ativa";
+}
+
+function statusLabel(st) {
+  const v = normStatus(st);
+  if (v === "concluida") return "✅ Concluída";
+  if (v === "cancelada") return "⛔ Cancelada";
+  return "🟢 Ativa";
+}
+
+function updateStatusButtons() {
+  const id = $("agendaId")?.value || "";
+  const st = normStatus($("agendaStatus")?.value);
+
+  const btnConcluir = $("btnConcluirAgenda");
+  const btnCancelar = $("btnCancelarAgenda");
+  const btnReabrir = $("btnReabrirAgenda");
+
+  // só mostra quando estiver editando um item existente
+  const show = Boolean(id);
+  if (btnConcluir) btnConcluir.style.display = show && st === "ativa" ? "inline-flex" : "none";
+  if (btnCancelar) btnCancelar.style.display = show && st === "ativa" ? "inline-flex" : "none";
+  if (btnReabrir) btnReabrir.style.display = show && st !== "ativa" ? "inline-flex" : "none";
+}
+
 // ===== Exportação WhatsApp =====
 function startOfDay(d) {
   const x = new Date(d);
@@ -82,21 +113,25 @@ function buildWhatsAppText(periodKey) {
   const list = itens
     .slice()
     .map((it) => ({ ...it, _d: getAgendaDate(it) }))
+    // por padrão, não exporta itens concluídos/cancelados
+    .filter((it) => normStatus(it.status) === "ativa")
     .filter((it) => it._d instanceof Date && !isNaN(it._d) && it._d >= start && it._d <= end)
     .sort((a, b) => a._d - b._d)
-    .slice(0, 200);
+    .slice(0, 400);
 
-  const headerMap = {
-    dia: "📅 *Agenda de hoje*",
-    semana: "📅 *Agenda - próximos 7 dias*",
-    "15": "📅 *Agenda - próximos 15 dias*",
-    mes: "📅 *Agenda - este mês*",
-  };
+  const periodoLabel = {
+    dia: "Hoje",
+    semana: "Próximos 7 dias",
+    "15": "Próximos 15 dias",
+    mes: "Este mês",
+  }[periodKey] || "Período selecionado";
 
-  const header = headerMap[periodKey] || "📅 *Agenda*";
-  if (!list.length) return `${header}\n\nSem compromissos nesse período.`;
+  const nome = (document.title || "Agenda").split("·")[0].trim();
+  const header = `📝 Agenda da ${nome} 🏭\n✳️ ${periodoLabel}`;
 
-  // agrupa por dia
+  if (!list.length) return `${header}\n\n(sem compromissos nesse período)`;
+
+  // agrupa por dia (dd/mm/aaaa)
   const groups = new Map();
   for (const it of list) {
     const key = it._d.toLocaleDateString("pt-BR");
@@ -104,19 +139,102 @@ function buildWhatsAppText(periodKey) {
     groups.get(key).push(it);
   }
 
+  const cap1 = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+  const weekdayLine = (d) => {
+    const weekday = cap1(
+      d.toLocaleDateString("pt-BR", { weekday: "long" })
+    );
+    return `✳️ ${weekday} – ${fmtDateBR(d)}`;
+  };
+
+  const clockEmoji = (d) => {
+    if (!(d instanceof Date) || isNaN(d)) return "🕘";
+    let h = d.getHours();
+    let m = d.getMinutes();
+
+    // arredonda para o emoji mais próximo (hora cheia / meia hora)
+    let half = false;
+    if (m >= 45) {
+      h = (h + 1) % 12;
+      if (h === 0) h = 12;
+      half = false;
+    } else if (m >= 15) {
+      half = true;
+    } else {
+      half = false;
+    }
+
+    const hour = ((h % 12) || 12);
+    const full = {
+      1: "🕐", 2: "🕑", 3: "🕒", 4: "🕓", 5: "🕔", 6: "🕕",
+      7: "🕖", 8: "🕗", 9: "🕘", 10: "🕙", 11: "🕚", 12: "🕛",
+    };
+    const halfMap = {
+      1: "🕜", 2: "🕝", 3: "🕞", 4: "🕟", 5: "🕠", 6: "🕡",
+      7: "🕢", 8: "🕣", 9: "🕤", 10: "🕥", 11: "🕦", 12: "🕧",
+    };
+    return half ? (halfMap[hour] || "🕘") : (full[hour] || "🕘");
+  };
+
+  const statusEmoji = (st) => {
+    const v = normStatus(st);
+    if (v === "cancelada") return "⛔";
+    if (v === "concluida") return "✅";
+    // na exportação padrão, os itens são "ativos"; usamos ✅ para ficar no formato de repasse
+    return "✅";
+  };
+
+  const parseObs = (rawObs) => {
+    const obs = safe(rawObs, "");
+    const lines = obs
+      .split(/\r?\n+/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    let local = "";
+    let extra = [];
+
+    if (lines.length) {
+      // se vier com 📍, assume que é local
+      if (lines[0].startsWith("📍")) {
+        local = lines[0].replace(/^📍\s*/, "").trim();
+        extra = lines.slice(1);
+      } else {
+        // heurística: primeira linha curta -> local
+        const first = lines[0];
+        const looksLikePlace =
+          first.length <= 50 ||
+          /rua|av\.|avenida|praça|bairro|prefeitura|igreja|almoxarifado/i.test(first);
+        if (looksLikePlace) {
+          local = first;
+          extra = lines.slice(1);
+        } else {
+          extra = lines;
+        }
+      }
+    }
+    return { local, extra };
+  };
+
   let out = `${header}\n\n`;
+
   for (const [dayKey, dayItems] of groups.entries()) {
     const d = dayItems[0]._d;
-    out += `*${fmtDateBR(d)}*\n`;
+    out += `${weekdayLine(d)}\n\n`;
+
     for (const it of dayItems) {
       const t = fmtTimeBR(it._d);
       const title = safe(it.titulo, "(sem título)");
-      const obs = safe(it.obs, "").replace(/\s+/g, " ").trim();
-      out += `• ${t} — ${title}`;
-      if (obs) out += `\n  _${obs}_`;
-      out += "\n";
+      const { local, extra } = parseObs(it.obs);
+
+      out += `${statusEmoji(it.status)} ${title}\n`;
+      if (extra.length) {
+        for (const ln of extra) out += `${ln}\n`;
+      }
+      if (local) out += `📍 ${local}\n`;
+      out += `${clockEmoji(it._d)} ${t}\n\n`;
     }
-    out += "\n";
   }
 
   return out.trim();
@@ -165,8 +283,11 @@ function clearForm() {
   $("agendaTitulo").value = "";
   $("agendaObs").value = "";
   $("agendaImagem").value = "";
+  const st = $("agendaStatus");
+  if (st) st.value = "ativa";
   const btnEx = $("btnExcluirAgenda");
   if (btnEx) btnEx.style.display = "none";
+  updateStatusButtons();
   setStatus("");
 }
 
@@ -179,10 +300,15 @@ function fillForm(it) {
   $("agendaObs").value = it.obs || "";
   $("agendaImagem").value = "";
 
+  const st = $("agendaStatus");
+  if (st) st.value = normStatus(it.status);
+
   const btnEx = $("btnExcluirAgenda");
   if (btnEx) btnEx.style.display = it.id ? "inline-flex" : "none";
 
-  setStatus(it.id ? `Editando: ${safe(it.titulo, "(sem título)")}` : "");
+  updateStatusButtons();
+
+  setStatus(it.id ? `Editando: ${safe(it.titulo, "(sem título)")} · ${statusLabel(it.status)}` : "");
 }
 
 async function uploadImagem(file, agendaId) {
@@ -225,12 +351,13 @@ function renderLista() {
 
   for (const it of list.slice(0, 500)) {
     const div = document.createElement("div");
-    div.className = "item";
+    const st = normStatus(it.status);
+    div.className = `item agenda-item status-${st}`;
     const dt = it.dataHora?.toDate ? it.dataHora.toDate() : (it.dataHora ? new Date(it.dataHora) : null);
     const when = dt ? dt.toLocaleString("pt-BR") : "-";
     div.innerHTML = `
       <div class="title">${safe(it.titulo, "(sem título)")}</div>
-      <div class="meta">${when}<br>${safe(it.obs).slice(0, 120)}${(it.obs || "").length > 120 ? "..." : ""}</div>
+      <div class="meta">${statusLabel(st)} · ${when}<br>${safe(it.obs).slice(0, 120)}${(it.obs || "").length > 120 ? "..." : ""}</div>
       <div class="mini-actions">
         <button class="btn btn-ghost" data-action="open" data-id="${it.id}">Abrir</button>
       </div>
@@ -251,6 +378,7 @@ async function salvar() {
   const dataHora = parseDateTimeLocal($("agendaData")?.value);
   const titulo = ($("agendaTitulo")?.value || "").trim();
   const obs = ($("agendaObs")?.value || "").trim();
+  const status = normStatus($("agendaStatus")?.value);
   const file = $("agendaImagem")?.files?.[0];
 
   if (!dataHora) {
@@ -271,6 +399,7 @@ async function salvar() {
         dataHora,
         titulo,
         obs,
+        status,
         updatedAt: FieldValue.serverTimestamp(),
       };
 
@@ -288,6 +417,7 @@ async function salvar() {
         dataHora,
         titulo,
         obs,
+        status,
         imagemUrl: "",
         imagemPath: "",
         createdAt: FieldValue.serverTimestamp(),
@@ -335,11 +465,55 @@ async function excluir() {
   }
 }
 
+async function marcarStatus(novoStatus) {
+  const id = $("agendaId")?.value;
+  if (!id) return;
+  const st = normStatus(novoStatus);
+
+  const msgMap = {
+    concluida: "Marcar como concluída?",
+    cancelada: "Marcar como cancelada?",
+    ativa: "Reabrir este item?",
+  };
+  if (!confirm(msgMap[st] || "Alterar status?")) return;
+
+  try {
+    await db.collection("agenda").doc(id).set(
+      { status: st, updatedAt: FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+    const sel = $("agendaStatus");
+    if (sel) sel.value = st;
+    updateStatusButtons();
+    setStatus(`Status atualizado: ${statusLabel(st)}`);
+  } catch (e) {
+    console.error(e);
+    alert("Erro ao atualizar status.");
+  }
+}
+
 function boot() {
   // auth-guard controla visibilidade do mainApp; aqui só iniciamos listeners
   $("btnSalvarAgenda")?.addEventListener("click", salvar);
   $("btnNovaAgenda")?.addEventListener("click", clearForm);
   $("btnExcluirAgenda")?.addEventListener("click", excluir);
+
+  $("agendaStatus")?.addEventListener("change", () => {
+    updateStatusButtons();
+  });
+
+  $("btnConcluirAgenda")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    marcarStatus("concluida");
+  });
+  $("btnCancelarAgenda")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    marcarStatus("cancelada");
+  });
+  $("btnReabrirAgenda")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    marcarStatus("ativa");
+  });
 
   $("pesquisaAgenda")?.addEventListener("input", renderLista);
   $("ordenacaoAgenda")?.addEventListener("change", renderLista);
