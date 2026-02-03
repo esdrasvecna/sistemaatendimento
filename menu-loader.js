@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <a href="cadastro.html">Cadastro de pessoas</a>
       <a href="formularios.html">Formulários</a>
             <a href="agenda.html">Agenda</a>
+      <a href="documentos.html">Documentos</a>
 <button id="logoutBtn" class="btn-red">Sair</button>
     `;
 

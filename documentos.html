@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vereadora Vanessa da Usina · Documentos</title>
+
+  <link rel="icon" href="assets/img/logo.png" type="image/png">
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="menu-loader.js" defer></script>
+
+  <!-- Firebase compat (padrão do projeto) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="auth-guard.js"></script>
+
+  <!-- PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+  <div id="authLoading" class="auth-loading">
+    <div class="loader"></div>
+    <div class="meta">Verificando acesso...</div>
+  </div>
+
+  <main class="container hidden" id="mainApp">
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/img/logo.png" alt="Logo" class="logo" />
+        <div>
+          <div class="title">Documentos</div>
+          <div class="subtitle">Biblioteca de arquivos e modelos do gabinete</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Upload / Fixos -->
+      <section class="glass card">
+        <div class="card-title"><h2>Adicionar documento</h2></div>
+
+        <div class="hint" id="statusDocs"></div>
+
+        <label class="label">Título (opcional)</label>
+        <input id="docTitulo" type="text" placeholder="Ex.: Lista de Acompanhamento" />
+
+        <label class="label">Categoria</label>
+        <select id="docCategoria">
+          <option value="Modelos">Modelos</option>
+          <option value="Ofícios">Ofícios</option>
+          <option value="Listas">Listas</option>
+          <option value="Outros">Outros</option>
+        </select>
+
+        <label class="label" style="margin-top: 10px;">Arquivo</label>
+        <input id="docArquivo" type="file" />
+
+        <div class="mini-actions" style="margin-top: 12px;">
+          <button class="btn" id="btnEnviarDoc">Enviar</button>
+          <button class="btn btn-ghost" id="btnLimparDoc">Limpar</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Menu fechável (sem depender de CSS novo) -->
+        <button class="btn btn-ghost" id="toggleModelos" style="width:100%; text-align:left;">
+          ▸ Modelos rápidos
+        </button>
+        <div id="blocoModelos" style="display:none; margin-top: 10px;">
+          <div class="hint" style="margin-bottom: 10px;">Arquivos prontos para baixar ou salvar na biblioteca.</div>
+
+          <div class="list">
+            <div class="list-item" style="display:flex; gap:10px; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:700;">Lista de Acompanhamento do Gabinete</div>
+                <div class="hint">Gabinete.docx</div>
+              </div>
+              <div class="mini-actions">
+                <a class="btn btn-ghost" href="assets/docs/Gabinete.docx" download>Baixar</a>
+                <button class="btn" id="btnSalvarModeloGabinete">Salvar na biblioteca</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Lista -->
+      <section class="glass card">
+        <div class="card-title"><h2>Biblioteca</h2></div>
+
+        <input id="pesquisaDocs" type="text" placeholder="Pesquisar por título, categoria ou nome do arquivo..." />
+
+        <label class="label" style="margin-top: 10px;">Filtrar por categoria</label>
+        <select id="filtroCategoria">
+          <option value="">Todas</option>
+          <option value="Modelos">Modelos</option>
+          <option value="Ofícios">Ofícios</option>
+          <option value="Listas">Listas</option>
+          <option value="Outros">Outros</option>
+        </select>
+
+        <label class="label" style="margin-top: 10px;">Ordenação</label>
+        <select id="ordenacaoDocs">
+          <option value="recentes">Mais recentes primeiro</option>
+          <option value="a-z">Título (A-Z)</option>
+          <option value="z-a">Título (Z-A)</option>
+        </select>
+
+        <div class="divider"></div>
+
+        <div class="mini-actions" style="margin-bottom: 10px;">
+          <button class="btn btn-ghost" id="btnGerarPdfLista">Gerar PDF da lista</button>
+        </div>
+
+        <div class="list" id="listaDocs"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="documentos.js"></script>
+</body>
+</html>
